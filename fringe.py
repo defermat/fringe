@@ -49,22 +49,28 @@ def cleanup_fs(src):
 
                     ext = f.split('.')[-1]
                     filename = f.split('/')[-1]
-                    if not os.path.exists(backup_dir+"/"+ext):
-                        os.makedirs(backup_dir+"/"+ext)
-                    f_hash = md5(root+"/"+f)
-                    if not f_hash in hash_dict:
-                        hash_dict['f_hash'] = [filename]
-                        shutil.move(f_path, backup_dir+"/"+ext+"/"+filename)
-                    else:
-                        if filename in hash_dict['f_hash']:
-                             # same file hash and filename exist in more than one place
-                             with open(src+"/fringe_backup/.fringedups", 'a') as fo:
-                                 fo.write(f_path+", "+f_hash+"\n")
+                    filenames = f.split('/')
+                    dot_folder = False
+                    for dir in filenames:
+                        if dir.startswith("."):
+                            dot_folder = True
+                    if not dot_folder:
+                        if not os.path.exists(backup_dir+"/"+ext):
+                            os.makedirs(backup_dir+"/"+ext)
+                        f_hash = md5(root+"/"+f)
+                        if not f_hash in hash_dict:
+                            hash_dict['f_hash'] = [filename]
+                            shutil.move(f_path, backup_dir+"/"+ext+"/"+filename)
                         else:
-                             # same file hash but different filename exist in more than one place
-                             hash_dict['f_hash'].append(filename)
-                             with open(src+"/fringe_backup/.fringedups", 'a') as fo:
-                                 fo.write(f_path+", "+f_hash+"\n")
+                            if filename in hash_dict['f_hash']:
+                                # same file hash and filename exist in more than one place
+                                with open(src+"/fringe_backup/.fringedups", 'a') as fo:
+                                    fo.write(f_path+", "+f_hash+"\n")
+                            else:
+                                # same file hash but different filename exist in more than one place
+                                hash_dict['f_hash'].append(filename)
+                                with open(src+"/fringe_backup/.fringedups", 'a') as fo:
+                                    fo.write(f_path+", "+f_hash+"\n")
         with open(src+"/fringe_backup/.fringe", 'w') as f:
             json.dump(hash_dict, f)
     return
