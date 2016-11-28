@@ -62,9 +62,17 @@ def cleanup_fs(src):
                         if not f_hash in hash_dict:
                             hash_dict['f_hash'] = [filename]
                             if os.path.exists(backup_dir+"/"+ext+"/"+filename):
-                                shutil.move(f_path, backup_dir+"/"+ext+"/"+filename+str(uuid.uuid4())+ext)
+                                try:
+                                    shutil.move(f_path, backup_dir+"/"+ext+"/"+filename+str(uuid.uuid4())+ext)
+                                except:
+                                    with open(src+"/fringe_backup/.fringe_errors", 'a') as fo:
+                                        fo.write(f_path+", "+f_hash+"\n")
                             else:
-                                shutil.move(f_path, backup_dir+"/"+ext+"/"+filename)
+                                try:
+                                    shutil.move(f_path, backup_dir+"/"+ext+"/"+filename)
+                                except:
+                                    with open(src+"/fringe_backup/.fringe_errors", 'a') as fo:
+                                        fo.write(f_path+", "+f_hash+"\n")
                         else:
                             if filename in hash_dict['f_hash']:
                                 # same file hash and filename exist in more than one place
