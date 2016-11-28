@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import sys
+import uuid
 
 def md5(fname):
     hash = hashlib.md5()
@@ -60,7 +61,10 @@ def cleanup_fs(src):
                         f_hash = md5(root+"/"+f)
                         if not f_hash in hash_dict:
                             hash_dict['f_hash'] = [filename]
-                            shutil.move(f_path, backup_dir+"/"+ext+"/"+filename)
+                            if os.path.exists(backup_dir+"/"+ext+"/"+filename):
+                                shutil.move(f_path, backup_dir+"/"+ext+"/"+filename+str(uuid.uuid4())+ext)
+                            else:
+                                shutil.move(f_path, backup_dir+"/"+ext+"/"+filename)
                         else:
                             if filename in hash_dict['f_hash']:
                                 # same file hash and filename exist in more than one place
