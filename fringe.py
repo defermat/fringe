@@ -28,6 +28,7 @@ def check_dest_fs(src, dest):
     return
 
 def cleanup_fs(src):
+    exts = ['jpg', 'jpeg', 'avi', 'nef', 'mp4', 'wav', 'mov', 'mpeg', 'zip', 'divx', 'm4v', 'mkv', 'mpg', 'mp3', 'wma', 'm4a']
     hash_dict = {}
     if os.path.isfile(src+"/fringe_backup/.fringe"):
         pass
@@ -35,54 +36,57 @@ def cleanup_fs(src):
         backup_dir = src+"/fringe_backup"
         if not os.path.exists(backup_dir):
             os.makedirs(backup_dir)
+        if os.path.exists(src+"/.Spotlight-V100"):
+            shutil.rmtree(src+"/.Spotlight-V100")
         for root, dirs, files in os.walk(src):
             for f in files:
                 if '.' in f and not f.startswith('.') and not root.startswith(backup_dir):
-                    f_path = root+"/"+f
-                    rows,columns = os.popen('stty size', 'r').read().split()
-                    rows = int(rows)
-                    columns = int(columns)
-                    sys.stdout.write('\r')
-                    sys.stdout.write(' ' * columns)
-                    sys.stdout.write('\r')
-                    sys.stdout.write('processing {}'.format(f_path[:columns-12]))
-                    sys.stdout.flush()
+                    ext = f.split('.')[-1].lower()
+                    if ext in exts:
+                        f_path = root+"/"+f
+                        rows,columns = os.popen('stty size', 'r').read().split()
+                        rows = int(rows)
+                        columns = int(columns)
+                        sys.stdout.write('\r')
+                        sys.stdout.write(' ' * columns)
+                        sys.stdout.write('\r')
+                        sys.stdout.write('processing {}'.format(f_path[:columns-12]))
+                        sys.stdout.flush()
 
-                    ext = f.split('.')[-1]
-                    filename = f.split('/')[-1]
-                    filenames = f.split('/')
-                    dot_folder = False
-                    for dir in filenames:
-                        if dir.startswith("."):
-                            dot_folder = True
-                    if not dot_folder:
-                        if not os.path.exists(backup_dir+"/"+ext):
-                            os.makedirs(backup_dir+"/"+ext)
-                        f_hash = md5(root+"/"+f)
-                        if not f_hash in hash_dict:
-                            hash_dict['f_hash'] = [filename]
-                            if os.path.exists(backup_dir+"/"+ext+"/"+filename):
-                                try:
-                                    shutil.move(f_path, backup_dir+"/"+ext+"/"+filename+str(uuid.uuid4())+ext)
-                                except:
-                                    with open(src+"/fringe_backup/.fringe_errors", 'a') as fo:
-                                        fo.write(f_path+", "+f_hash+"\n")
+                        filename = f.split('/')[-1]
+                        filenames = f.split('/')
+                        dot_folder = False
+                        for dir in filenames:
+                            if dir.startswith("."):
+                                dot_folder = True
+                        if not dot_folder:
+                            if not os.path.exists(backup_dir+"/"+ext):
+                                os.makedirs(backup_dir+"/"+ext)
+                            f_hash = md5(root+"/"+f)
+                            if not f_hash in hash_dict:
+                                hash_dict['f_hash'] = [filename]
+                                if os.path.exists(backup_dir+"/"+ext+"/"+filename):
+                                    try:
+                                        shutil.move(f_path, backup_dir+"/"+ext+"/"+filename+str(uuid.uuid4())+ext)
+                                    except:
+                                        with open(src+"/fringe_backup/.fringe_errors", 'a') as fo:
+                                            fo.write(f_path+", "+f_hash+"\n")
+                                else:
+                                    try:
+                                        shutil.move(f_path, backup_dir+"/"+ext+"/"+filename)
+                                    except:
+                                        with open(src+"/fringe_backup/.fringe_errors", 'a') as fo:
+                                            fo.write(f_path+", "+f_hash+"\n")
                             else:
-                                try:
-                                    shutil.move(f_path, backup_dir+"/"+ext+"/"+filename)
-                                except:
-                                    with open(src+"/fringe_backup/.fringe_errors", 'a') as fo:
+                                if filename in hash_dict['f_hash']:
+                                    # same file hash and filename exist in more than one place
+                                    with open(src+"/fringe_backup/.fringedups", 'a') as fo:
                                         fo.write(f_path+", "+f_hash+"\n")
-                        else:
-                            if filename in hash_dict['f_hash']:
-                                # same file hash and filename exist in more than one place
-                                with open(src+"/fringe_backup/.fringedups", 'a') as fo:
-                                    fo.write(f_path+", "+f_hash+"\n")
-                            else:
-                                # same file hash but different filename exist in more than one place
-                                hash_dict['f_hash'].append(filename)
-                                with open(src+"/fringe_backup/.fringedups", 'a') as fo:
-                                    fo.write(f_path+", "+f_hash+"\n")
+                                else:
+                                    # same file hash but different filename exist in more than one place
+                                    hash_dict['f_hash'].append(filename)
+                                    with open(src+"/fringe_backup/.fringedups", 'a') as fo:
+                                        fo.write(f_path+", "+f_hash+"\n")
         with open(src+"/fringe_backup/.fringe", 'w') as f:
             json.dump(hash_dict, f)
     return
